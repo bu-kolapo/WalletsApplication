@@ -2,40 +2,39 @@ version: '3.8'
 
 services:
 
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: wallet_postgres
     environment:
-      POSTGRES_DB: wallet_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: yourpassword
+      POSTGRES_DB: wallet_db        # 👈 matches DB_NAME
+      POSTGRES_USER: admin          # 👈 matches DB_USERNAME
+      POSTGRES_PASSWORD: admin      # 👈 matches DB_PASSWORD
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # data persists even if container restarts
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - wallet_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U admin"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Your Spring Boot App
   wallet_app:
     build: .
     container_name: wallet_app
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/wallet_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: yourpassword
+      DB_HOST: postgres             # 👈 matches DB_HOST
+      DB_NAME: wallet_db            # 👈 matches DB_NAME
+      DB_USERNAME: admin            # 👈 matches DB_USERNAME
+      DB_PASSWORD: admin            # 👈 matches DB_PASSWORD
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       postgres:
-        condition: service_healthy  # wait for postgres to be ready before starting app
+        condition: service_healthy
     networks:
       - wallet_network
 
