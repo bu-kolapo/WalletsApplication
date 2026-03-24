@@ -1,4 +1,4 @@
-package com.wallets.dto;
+package com.wallets.dto.response;
 
 
 import lombok.AllArgsConstructor;

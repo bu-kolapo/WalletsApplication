@@ -1,4 +1,4 @@
-package com.wallets.dto;
+package com.wallets.dto.request;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -22,7 +22,7 @@ public class WalletRequest {
     @NotNull(message = "Amount cannot be null")
     @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
     private BigDecimal amount;
-    @NotBlank(message = "Transaction reference cannot be blank")
-    private String transactionRef;  // 👈 unique per request
+//    @NotBlank(message = "Transaction reference cannot be blank")
+//    private String transactionRef;  // 👈 unique per request
 
 }

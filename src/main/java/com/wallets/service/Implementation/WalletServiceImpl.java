@@ -1,7 +1,8 @@
 package com.wallets.service.Implementation;
 
-import com.wallets.dto.WalletRequest;
-import com.wallets.dto.WalletResponse;
+import com.wallets.dto.request.CreateWalletRequest;
+import com.wallets.dto.request.WalletRequest;
+import com.wallets.dto.response.WalletResponse;
 import com.wallets.exception.WalletNotFoundException;
 import com.wallets.model.Transaction;
 import com.wallets.model.Wallet;
@@ -32,7 +33,7 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     @Transactional
-    public WalletResponse createWallet(WalletRequest walletRequest) {
+    public WalletResponse createWallet(CreateWalletRequest walletRequest) {
         try {
             if (walletRepository.existsByUserId(walletRequest.getUserId())) {
                 return AppUtils.walletResponse(400, false, "Wallet already exists for userId: " + walletRequest.getUserId());
@@ -56,10 +57,10 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     @Transactional
-    public WalletResponse fundWallet(WalletRequest walletRequest) {
+    public WalletResponse fundWallet(WalletRequest walletRequest, String idempotencyKey) {
         try {
             // Idempotency check
-            if (transactionRepository.existsByTransactionRef(walletRequest.getTransactionRef())) {
+            if (transactionRepository.existsByTransactionRef(idempotencyKey)) {
                 return AppUtils.walletResponse(200, true, "Transaction already processed");
             }
 
@@ -71,23 +72,22 @@ public class WalletServiceImpl implements WalletService {
                 return AppUtils.walletResponse(400, false, "Funding amount must be greater than 0");
             }
 
-            // Fund the wallet
             Wallet wallet = walletRepository.findByUserId(walletRequest.getUserId())
                     .orElseThrow(() -> new WalletNotFoundException("Wallet not found"));
+
             wallet.setBalance(wallet.getBalance().add(walletRequest.getAmount()));
             walletRepository.save(wallet);
 
-            // Log transaction
+            // Log transaction with idempotencyKey as ref
             transactionRepository.save(Transaction.builder()
                     .transactionId(UUID.randomUUID().toString())
                     .userId(walletRequest.getUserId())
                     .amount(walletRequest.getAmount())
                     .type("CREDIT")
                     .description("Wallet funded")
-                    .transactionRef(walletRequest.getTransactionRef())
+                    .transactionRef(idempotencyKey)   // 👈 use header value
                     .build());
 
-            log.info("Wallet funded for userId: {} amount: {}", walletRequest.getUserId(), walletRequest.getAmount());
             return AppUtils.walletResponse(200, true, "Wallet funded successfully. New balance: " + wallet.getBalance());
 
         } catch (WalletNotFoundException ex) {
@@ -97,10 +97,10 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     @Transactional
-    public WalletResponse debitWallet(WalletRequest walletRequest) {
+    public WalletResponse debitWallet(WalletRequest walletRequest, String idempotencyKey) {
         try {
             // Idempotency check
-            if (transactionRepository.existsByTransactionRef(walletRequest.getTransactionRef())) {
+            if (transactionRepository.existsByTransactionRef(idempotencyKey)) {
                 return AppUtils.walletResponse(200, true, "Transaction already processed");
             }
 
@@ -112,29 +112,26 @@ public class WalletServiceImpl implements WalletService {
                 return AppUtils.walletResponse(400, false, "Debit amount must be greater than 0");
             }
 
-            // Rule 3: Cannot debit beyond available balance
             Wallet wallet = walletRepository.findByUserId(walletRequest.getUserId())
                     .orElseThrow(() -> new WalletNotFoundException("Wallet not found"));
 
+            // Rule 3: Cannot debit beyond available balance
             if (walletRequest.getAmount().compareTo(wallet.getBalance()) > 0) {
                 return AppUtils.walletResponse(400, false, "Insufficient funds. Available balance: " + wallet.getBalance());
             }
 
-            // Debit the wallet
             wallet.setBalance(wallet.getBalance().subtract(walletRequest.getAmount()));
             walletRepository.save(wallet);
 
-            // Log transaction
             transactionRepository.save(Transaction.builder()
                     .transactionId(UUID.randomUUID().toString())
                     .userId(walletRequest.getUserId())
                     .amount(walletRequest.getAmount())
                     .type("DEBIT")
                     .description("Wallet debited")
-                    .transactionRef(walletRequest.getTransactionRef())
+                    .transactionRef(idempotencyKey)   // 👈 use header value
                     .build());
 
-            log.info("Wallet debited for userId: {} amount: {}", walletRequest.getUserId(), walletRequest.getAmount());
             return AppUtils.walletResponse(200, true, "Debit successful. New balance: " + wallet.getBalance());
 
         } catch (WalletNotFoundException ex) {
@@ -143,11 +140,11 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    public WalletResponse getWalletDetails(WalletRequest walletRequest) {
+    public WalletResponse getWalletDetails(String userId) {
         try {
-            checkIfWalletExist(walletRequest.getUserId());
+            checkIfWalletExist(userId);
 
-            Wallet wallet = walletRepository.findByUserId(walletRequest.getUserId())
+            Wallet wallet = walletRepository.findByUserId(userId)
                     .orElseThrow(() -> new WalletNotFoundException("Wallet not found"));
 
             return AppUtils.walletResponse(200, true, "Wallet Details - UserId: " + wallet.getUserId()
@@ -168,5 +165,9 @@ public class WalletServiceImpl implements WalletService {
         if (!walletRepository.existsByUserId(userId)) {
             throw new WalletNotFoundException("Wallet not found for userId: " + userId);
         }
+    }
+    @Override
+    public List<Wallet> getAllWallets() {
+        return walletRepository.findAll();
     }
 }

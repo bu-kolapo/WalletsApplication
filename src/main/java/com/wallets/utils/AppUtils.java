@@ -1,6 +1,6 @@
 package com.wallets.utils;
 
-import com.wallets.dto.WalletResponse;
+import com.wallets.dto.response.WalletResponse;
 
 public class AppUtils {
 
