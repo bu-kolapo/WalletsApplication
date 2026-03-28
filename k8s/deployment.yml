@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wallet-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wallet-app
+  template:
+    metadata:
+      labels:
+        app: wallet-app
+    spec:
+      containers:
+        - name: wallet-app
+          image: wallets-app:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: wallet-config
+          env:
+            - name: DB_PASSWORD
+              value: "admin"
+            - name: JWT_SECRET
+              value: "your-super-secret-key-must-be-at-least-32-characters-long"
+            - name: JWT_EXPIRATION
+              value: "86400000"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "wallet_db"
+            - name: POSTGRES_USER
+              value: "admin"
+            - name: POSTGRES_PASSWORD
+              value: "admin"
