@@ -14,8 +14,8 @@ spec:
     spec:
       containers:
         - name: wallet-app
-          image: wallets-app:latest
-          imagePullPolicy: Never
+          image: bukolapo/wallets-app:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           envFrom:

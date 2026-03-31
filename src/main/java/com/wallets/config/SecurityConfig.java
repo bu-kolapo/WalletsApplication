@@ -37,6 +37,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints - no token needed
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Swagger endpoints - allow without token
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/api-docs/**",
+                                "/api-docs.yaml",
+                                "/v3/api-docs/**"
+                        ).permitAll()
                         // All wallet endpoints require authentication
                         .anyRequest().authenticated()
                 )

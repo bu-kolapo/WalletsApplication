@@ -6,6 +6,8 @@ import com.wallets.dto.response.WalletResponse;
 import com.wallets.model.Transaction;
 import com.wallets.service.WalletService;
 import com.wallets.utils.AppUtils;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -16,6 +18,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/wallet")
 @Validated
+@Tag(name = "Wallet", description = "Wallet management endpoints")
+@SecurityRequirement(name = "Bearer Authentication")
 public class WalletController {
 
     private final WalletService walletService;

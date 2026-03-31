@@ -3,19 +3,20 @@ kind: Service
 metadata:
   name: wallet-service
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: wallet-app
   ports:
-    - port: 8080
+    - port: 80
       targetPort: 8080
-      nodePort: 30080
+#      nodePort: 30080
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: postgres-service
 spec:
+  type: ClusterIP
   selector:
     app: postgres
   ports:
